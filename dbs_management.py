@@ -67,19 +67,28 @@ def get_borrow_history(user_id):
     return borrow_history
 
 def search_books(search_term):
+    # SQL query to search for books based on title, author, or bookshelf
     query = """
-    SELECT id, title, author, bookshelf 
+    SELECT id, title, author, link, bookshelf 
     FROM books 
     WHERE title LIKE %s OR author LIKE %s OR bookshelf LIKE %s
     """
+    
+    # Apply the LIKE pattern to the search term (case-insensitive)
     like_pattern = f"%{search_term}%"
+    
+    # Execute the query with the search term applied to all fields (title, author, bookshelf)
     cursor.execute(query, (like_pattern, like_pattern, like_pattern))
+    
+    # Fetch all matching results
     results = cursor.fetchall()
     
+    # If results are found, return them; otherwise, return an empty list
     if results:
         return results
     else:
-        return "No books found matching your search."
+        return []  # Return an empty list if no books match the search
+
     
 
 # Delete a Book

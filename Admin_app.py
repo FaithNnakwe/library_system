@@ -9,7 +9,7 @@ def dashboard():
     if st.button("Log out"):
         st.session_state.logged_in = False
         st.session_state.user = None
-        st.experimental_rerun()
+        st.rerun()
 
     # Sidebar Navigation
     menu = st.sidebar.selectbox("Menu", ["Add Book", "Search Books", "Edit Book", "Delete Book"])
@@ -31,15 +31,27 @@ def dashboard():
     # Search Books
     elif menu == "Search Books":
         st.subheader("Search for Books")
-        search_query = st.text_input("Enter Title, Author, or Genre")
+        search_query = st.text_input("Enter Title, Author, or Bookshelf")
 
         if st.button("Search"):
-            results = search_books(search_query)
-            if results:
-                for book in results:
-                    st.write(f"📖 **{book[1]}** - {book[2]} ({book[3]}, {book[4]})")
+        # Ensure search_query is not empty
+            if search_query:
+                results = search_books(search_query)  # Function to search based on query
+
+                if results:
+                    for book in results:
+                    # Check if the book tuple has 5 elements
+                        if len(book) >= 5:
+                        # Display the book details
+                            st.write(f"📖 **{book[1]}** - {book[2]} ({book[3]}, {book[4]})")
+                        else:
+                        # Handle incomplete book data
+                            st.write(f"📖 **{book[1]}** - {book[2]} (Incomplete data)")
+                else:
+                    st.warning("No books found.")
             else:
-                st.warning("No books found.")
+                st.warning("Please enter a search term.")
+
 
     # Edit a Book
     elif menu == "Edit Book":

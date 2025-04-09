@@ -10,7 +10,7 @@ def dashboard():
     if st.button("Log out"):
         st.session_state.logged_in = False
         st.session_state.user = None
-        st.experimental_rerun()
+        st.rerun()
 
     # Connect to the MySQL database
     conn = mysql.connector.connect(

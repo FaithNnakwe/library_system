@@ -55,7 +55,7 @@ def login():
             st.session_state.logged_in = True
             st.session_state.user = user_data
             st.success(f"Welcome {user_data['name']} ({user_data['role']})")
-            st.reload()
+            st.rerun()  # Trigger a rerun to update the app flow
         else:
             st.error("Invalid email or password.")
 
