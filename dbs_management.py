@@ -5,7 +5,8 @@ import bcrypt
 conn = mysql.connector.connect(
     host="localhost",
     user="root",  # replace with your MySQL username
-    password="Faith0644",  # replace with your MySQL password
+    port=3307,
+    password="Chi-chi04",  # replace with your MySQL password
     database="library_db"
 )
 

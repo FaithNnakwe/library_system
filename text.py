@@ -22,8 +22,9 @@ print(df.head())
 # MySQL connection details
 conn = mysql.connector.connect(
     host="localhost",  # Update with your MySQL host
+    port=3307,
     user="root",  # Update with your MySQL username
-    password="xxxxx",  # Update with your MySQL password
+    password="Chi-chi04",  # Update with your MySQL password
     database="library_db"  # The name of your database
 )
 
