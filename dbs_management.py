@@ -67,19 +67,28 @@ def get_borrow_history(user_id):
     return borrow_history
 
 def search_books(search_term):
+    # SQL query to search for books based on title, author, or bookshelf
     query = """
-    SELECT id, title, author, bookshelf 
+    SELECT id, title, author, link, bookshelf 
     FROM books 
     WHERE title LIKE %s OR author LIKE %s OR bookshelf LIKE %s
     """
+    
+    # Apply the LIKE pattern to the search term (case-insensitive)
     like_pattern = f"%{search_term}%"
+    
+    # Execute the query with the search term applied to all fields (title, author, bookshelf)
     cursor.execute(query, (like_pattern, like_pattern, like_pattern))
+    
+    # Fetch all matching results
     results = cursor.fetchall()
     
+    # If results are found, return them; otherwise, return an empty list
     if results:
         return results
     else:
-        return "No books found matching your search."
+        return []  # Return an empty list if no books match the search
+
     
 
 # Delete a Book
@@ -93,6 +102,24 @@ def edit_book(book_id, title, author, bookshelf,):
     query = "UPDATE books SET title = %s, author = %s, bookshelf = %s  WHERE id = %s"
     cursor.execute(query, (title, author, bookshelf, book_id))
     conn.commit()
+
+def get_borrowed_books():
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Faith0644",
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.name, b.title, bb.due_date
+        FROM borrow_records bb
+        JOIN users u ON bb.user_id = u.id
+        JOIN books b ON bb.book_id = b.id
+    """)
+    results = cursor.fetchall()
+    conn.close()
+    return results
 
 
 def close_connection():
