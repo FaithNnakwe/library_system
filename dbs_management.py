@@ -103,6 +103,24 @@ def edit_book(book_id, title, author, bookshelf,):
     cursor.execute(query, (title, author, bookshelf, book_id))
     conn.commit()
 
+def get_borrowed_books():
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Faith0644",
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.name, b.title, bb.due_date
+        FROM borrow_records bb
+        JOIN users u ON bb.user_id = u.id
+        JOIN books b ON bb.book_id = b.id
+    """)
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
 
 def close_connection():
     cursor.close()

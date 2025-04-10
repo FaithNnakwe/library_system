@@ -1,5 +1,5 @@
 import streamlit as st
-from dbs_management import add_book, edit_book, search_books, delete_book
+from dbs_management import add_book, edit_book, search_books, delete_book, get_borrowed_books
 
 def dashboard():
     st.title("📚 Library Book Catalog System")
@@ -12,7 +12,7 @@ def dashboard():
         st.rerun()
 
     # Sidebar Navigation
-    menu = st.sidebar.selectbox("Menu", ["Add Book", "Search Books", "Edit Book", "Delete Book"])
+    menu = st.sidebar.selectbox("Menu", ["Add Book", "Search Books", "Edit Book", "Delete Book", "Borrowed Books"])
 
     # Add a Book
     if menu == "Add Book":
@@ -73,3 +73,13 @@ def dashboard():
         if st.button("Delete"):
             delete_book(book_id)
             st.success("Book deleted successfully!")
+    
+    elif menu == "Borrowed Books":
+        st.subheader("Borrowed Book Records")
+        borrowed = get_borrowed_books()
+        if borrowed:
+            for record in borrowed:
+                st.write(f"👤 **{record[0]}** borrowed 📖 *{record[1]}*, due on 🗓️ {record[2]}")
+        else:
+            st.info("No books currently borrowed.")
+
