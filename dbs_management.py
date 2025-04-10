@@ -89,7 +89,51 @@ def search_books(search_term):
     else:
         return []  # Return an empty list if no books match the search
 
-    
+# Search by Title
+def search_books_by_title(title):
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",  # replace with your MySQL username
+        password="Faith0644",  # replace with your MySQL password
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    query = f"SELECT * FROM books WHERE title LIKE %s"
+    cursor.execute(query, ('%' + title + '%',))  # Search for books with the title
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+# Search by Author
+def search_books_by_author(author):
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",  # replace with your MySQL username
+        password="Faith0644",  # replace with your MySQL password
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    query = f"SELECT * FROM books WHERE author LIKE %s"
+    cursor.execute(query, ('%' + author + '%',))  # Search for books by the author
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+# Search by Bookshelf
+def search_books_by_bookshelf(bookshelf):
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",  # replace with your MySQL username
+        password="Faith0644",  # replace with your MySQL password
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    query = f"SELECT * FROM books WHERE bookshelf LIKE %s"
+    cursor.execute(query, ('%' + bookshelf + '%',))  # Search for books in the bookshelf
+    results = cursor.fetchall()
+    conn.close()
+    return results
+   
 
 # Delete a Book
 def delete_book(book_id):
