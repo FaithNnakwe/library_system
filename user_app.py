@@ -1,9 +1,9 @@
 import streamlit as st
 import mysql.connector
 from dbs_management import search_books_by_author, search_books_by_bookshelf, search_books_by_title
-from dbs_management import get_user_borrowed_books, return_borrowed_book
+from dbs_management import get_user_borrowed_books, return_borrowed_book, extend_due_date
 from PIL import Image, ImageDraw, ImageFont
-from pages import borrow_book
+import borrow_book
 import random
 from textwrap import wrap
 import login
@@ -40,13 +40,15 @@ def wrap_text(text, font, max_width):
     lines.append(line)
     return lines
 
-# Dashboard Function
 def dashboard():
     if 'user' not in st.session_state or not st.session_state.get('logged_in', False):
         st.warning("🚫 Please log in to access the dashboard.")
-        st.session_state.page = "login"  # optional: auto-redirect to login page
+        st.session_state.page = "login"
         st.rerun()
         return
+
+    if 'current_menu' not in st.session_state:
+        st.session_state.current_menu = "Search Books"  # default view
 
     st.title("📚 User Dashboard")
     st.write(f"Welcome, {st.session_state.user['name']}!")
@@ -58,46 +60,35 @@ def dashboard():
         st.session_state.page = "login"
         st.rerun()
 
-    # Sidebar Menu
-    menu = st.sidebar.selectbox("Menu", ["Search Books", "View Borrowed Books"])
+    # Sidebar Menu (updates session state)
+    selected = st.sidebar.selectbox("Menu", ["Search Books", "View Borrowed Books"], index=["Search Books", "View Borrowed Books"].index(st.session_state.current_menu))
+    st.session_state.current_menu = selected
 
-    # Menu Actions
-    if menu == "Search Books":
+    # --- MENU ACTIONS ---
+
+    if st.session_state.current_menu == "Search Books":
         search_books_menu()
 
-    def view_borrowed_books_menu():
-        email = st.session_state.user['email']
-        borrowed_books = get_user_borrowed_books(email)
+        if 'selected_book_id' in st.session_state:
+            borrow_book.borrow_page()
+        else:
+            st.subheader("📖 Available Books")
+            conn = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="Faith0644",
+                database="library_db"
+            )
+            cursor = conn.cursor()
+            show_available_books()
+            conn.close()
 
-        st.subheader("📚 Your Borrowed Books")
-        if not borrowed_books:
-            st.info("You have no borrowed books.")
-            return
+    elif st.session_state.current_menu == "View Borrowed Books":
+        view_borrowed_books_menu()
 
-        for book in borrowed_books:
-            with st.expander(f"{book['title']} by {book['author']}"):
-                st.write(f"**Borrowed On:** {book['borrow_date']}")
-                st.write(f"**Due Date:** {book['return_date']}")
-                if st.button(f"Return '{book['title']}'", key=book['id']):
-                    return_borrowed_book(book['id'], email)
-                    st.success(f"You returned '{book['title']}' successfully.")
-                    st.rerun()
-
-    # Display available books or borrow page
-    if 'selected_book_id' in st.session_state:
-        borrow_book.borrow_page()
-    else:
-        # Show the available books
-        conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Faith0644",
-            database="library_db"
-        )
-        cursor = conn.cursor()
-        st.subheader("📖 Available Books")
-        show_available_books()
-        conn.close()
+        if st.button("🔙 Return to Dashboard"):
+            st.session_state.current_menu = "Search Books"
+            st.rerun()
 
 
 # Search Books Function
@@ -137,9 +128,32 @@ def display_search_results(results):
 
 # View Borrowed Books Function
 def view_borrowed_books_menu():
-    st.subheader("View Borrowed Books")
-    # This section would fetch and display borrowed books from the database
-    pass
+    email = st.session_state.user['email']
+    borrowed_books = get_user_borrowed_books(email)
+
+    st.subheader("📚 Your Borrowed Books")
+    if 'feedback' in st.session_state:
+        st.success(st.session_state.feedback)
+        del st.session_state.feedback  # remove after sh
+
+    if not borrowed_books:
+        st.info("You have no borrowed books.")
+        return
+
+    for book in borrowed_books:
+        with st.expander(f"{book['title']} by {book['author']}"):
+            st.write(f"**Link:** {book['link']}")
+            st.write(f"**Borrowed On:** {book['borrow_date']}")
+            st.write(f"**Due Date:** {book['due_date']}")
+            if st.button(f"Return '{book['title']}'", key=book['id']):
+                return_borrowed_book(book['id'], email)
+                st.session_state.feedback = f"You returned '{book['title']}' successfully."
+                st.rerun()
+            if st.button(f"Extend Due Date for '{book['title']}'", key=f"extend_{book['id']}"):
+                extend_due_date(book['id'], email)
+                st.session_state.feedback = f"Due date for '{book['title']}' has been extended by 14 days."
+                st.rerun()
+
 
 @st.cache_data
 def get_random_books():
@@ -219,6 +233,6 @@ def main():
     elif st.session_state.page == 'borrow':
         borrow_book.borrow_page()
     elif st.session_state.page == 'login':
-        login.login() 
+        login.login('main') 
 
 main()

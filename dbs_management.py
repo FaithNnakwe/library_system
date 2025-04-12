@@ -1,5 +1,6 @@
 import mysql.connector
 import bcrypt
+from datetime import datetime, timedelta
 
 # Connect to the MySQL database
 conn = mysql.connector.connect(
@@ -114,11 +115,11 @@ def get_user_borrowed_books(email):
     )
     cursor = conn.cursor(dictionary=True)
     query = """
-        SELECT b.id, b.title, b.author, bb.borrow_date, bb.due_date
-        FROM borrowed_books bb
+        SELECT b.id, b.title, b.link, b.author, bb.borrow_date, bb.due_date
+        FROM borrow_records bb
         JOIN books b ON bb.book_id = b.id
         JOIN users u ON u.id = bb.user_id
-        WHERE u.email = %s AND bb.returned = FALSE
+        WHERE u.email = %s AND bb.return_status = FALSE
     """
     cursor.execute(query, (email,))
     results = cursor.fetchall()
@@ -134,7 +135,7 @@ def return_borrowed_book(book_id, email):
     )
     cursor = conn.cursor()
     update_query = """
-        UPDATE borrowed_books bb
+        UPDATE borrow_records bb
         JOIN users u ON bb.user_id = u.id
         SET bb.return_status = TRUE
         WHERE bb.book_id = %s AND u.email = %s
@@ -142,6 +143,26 @@ def return_borrowed_book(book_id, email):
     cursor.execute(update_query, (book_id, email))
     conn.commit()
     conn.close()
+
+
+def extend_due_date(book_id, email):
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Faith0644",
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    update_query = """
+        UPDATE borrow_records bb
+        JOIN users u ON bb.user_id = u.id
+        SET bb.due_date = DATE_ADD(bb.due_date, INTERVAL 14 DAY)
+        WHERE bb.book_id = %s AND u.email = %s AND bb.return_status = FALSE
+    """
+    cursor.execute(update_query, (book_id, email))
+    conn.commit()
+    conn.close()
+
 
 
 def close_connection():

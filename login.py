@@ -42,12 +42,12 @@ def sign_up():
                 st.error("Email already exists.")
 
 # Login
-def login():
+def login(role="main"):
     st.title("Login")
-    email = st.text_input("Email", key="login_email")
-    password = st.text_input("Password", type="password")
+    email = st.text_input("Email", key=f"login_email_{role}")
+    password = st.text_input("Password", type="password", key=f"login_password_{role}")
 
-    if st.button("Login"):
+    if st.button("Login", key=f"login_button_{role}"):
         if not email or not password:
             st.error("Please fill in all fields.")
         else: 
@@ -85,6 +85,6 @@ if st.session_state.logged_in:
 else:
     page = st.sidebar.radio("Go to", ["Login", "Sign Up"])
     if page == "Login":
-        login()
+        login('main')
     else:
         sign_up()
