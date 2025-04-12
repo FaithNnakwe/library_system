@@ -25,17 +25,21 @@ def sign_up():
     role = st.selectbox("Role", ["user", "admin"])
 
     if st.button("Register"):
-        hashed_pw = hash_password(password)
-        try:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)", 
+        if not name or not email or not password or not role:
+            st.error("Please fill in all fields.")
+        else:
+            hashed_pw = hash_password(password)
+
+            try:
+                conn = get_connection()
+                cursor = conn.cursor()
+                cursor.execute("INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)", 
                            (name, email, hashed_pw, role))
-            conn.commit()
-            conn.close()
-            st.success("Registration successful. Please login.")
-        except mysql.connector.errors.IntegrityError:
-            st.error("Email already exists.")
+                conn.commit()
+                conn.close()
+                st.success("Registration successful. Please login.")
+            except mysql.connector.errors.IntegrityError:
+                st.error("Email already exists.")
 
 # Login
 def login():
@@ -44,20 +48,23 @@ def login():
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        hashed_pw = hash_password(password)
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE email = %s AND password = %s", (email, hashed_pw))
-        user_data = cursor.fetchone()
-        conn.close()
+        if not email or not password:
+            st.error("Please fill in all fields.")
+        else: 
+            hashed_pw = hash_password(password)
+            conn = get_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users WHERE email = %s AND password = %s", (email, hashed_pw))
+            user_data = cursor.fetchone()
+            conn.close()
 
-        if user_data:
-            st.session_state.logged_in = True
-            st.session_state.user = user_data
-            st.success(f"Welcome {user_data['name']} ({user_data['role']})")
-            st.rerun()  # Trigger a rerun to update the app flow
-        else:
-            st.error("Invalid email or password.")
+            if user_data:
+                st.session_state.logged_in = True
+                st.session_state.user = user_data
+                st.success(f"Welcome {user_data['name']} ({user_data['role']})")
+                st.rerun()  # Trigger a rerun to update the app flow
+            else:
+                st.error("Invalid email or password.")
 
 # Route after login
 def main_app():

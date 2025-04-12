@@ -71,9 +71,6 @@ def dashboard():
     st.subheader("📖 Available Books")
     show_available_books(cursor)
 
-    # Borrow Book Form
-    borrow_book_form()
-
     # Close connection
     conn.close()
 
@@ -120,18 +117,35 @@ def view_borrowed_books_menu():
 
 # Available Books Function
 def show_available_books(cursor):
-    cursor.execute("SELECT * FROM books WHERE bookshelf != 'None' ORDER BY RAND() LIMIT 10;")
+    st.subheader("Available Books")
+
+    # Initialize the number of books to show
+    if 'books_shown' not in st.session_state:
+        st.session_state.books_shown = 10  # Show 5 books initially
+
+    # Connect to the database
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",  # your MySQL username
+        password="Faith0644",  # your MySQL password
+        database="library_db"
+    )
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books WHERE bookshelf IS NOT NULL ORDER BY RAND()")
     books = cursor.fetchall()
+    conn.close()
 
-    # Create a new column set for each group of images
-    cols = st.columns(5)  # Adjust the number '5' for how many books to show in each row
-    for idx, book in enumerate(books):
-        title, author, genre = book[1], book[2], book[4]
-        display_book_image(title, author, genre, idx, cols)
+    # Display books based on the current count
+    cols = st.columns(5)
+    for idx, book in enumerate(books[:st.session_state.books_shown]):
+        title, author, genre, book_id = book[1], book[2], book[4], book[0]
+        display_book_image(title, author, genre, idx,cols)
 
-        # Recreate columns for every new set of 5 books
-        if (idx + 1) % 5 == 0 and idx != len(books) - 1:
-            cols = st.columns(5)
+    # Add a "Load More" button if there are more books
+    if st.session_state.books_shown < len(books):
+        if st.button("Load More"):
+            st.session_state.books_shown += 5  # Load 5 more books
+
 
 # Book Display Function
 def display_book_image(title, author, genre, idx, cols):
@@ -158,14 +172,3 @@ def display_book_image(title, author, genre, idx, cols):
     col_idx = idx % 5  # Ensure images are placed correctly in a row
     with cols[col_idx]:
         st.image(img, caption=f"Genre: {genre}")
-
-# Borrow Book Form Function
-def borrow_book_form():
-    st.subheader("📚 Borrow a Book")
-    user_id = st.number_input("Your User ID", min_value=1)
-    book_id = st.number_input("Book ID to Borrow", min_value=1)
-    due_date = st.date_input("Due Date")
-
-    if st.button("Borrow Book"):
-        borrow_book(user_id, book_id, due_date)
-        st.success("Book borrowed successfully!")
