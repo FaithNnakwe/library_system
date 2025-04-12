@@ -97,7 +97,7 @@ def get_borrowed_books():
     )
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT u.name, b.title, bb.due_date
+        SELECT u.name, b.title, bb.due_date, bb.return_status
         FROM borrow_records bb
         JOIN users u ON bb.user_id = u.id
         JOIN books b ON bb.book_id = b.id
@@ -162,8 +162,6 @@ def extend_due_date(book_id, email):
     cursor.execute(update_query, (book_id, email))
     conn.commit()
     conn.close()
-
-
 
 def close_connection():
     cursor.close()

@@ -132,6 +132,7 @@ def view_borrowed_books_menu():
     borrowed_books = get_user_borrowed_books(email)
 
     st.subheader("📚 Your Borrowed Books")
+    st.markdown("#### Users are allowed 4 books at a time.")
     if 'feedback' in st.session_state:
         st.success(st.session_state.feedback)
         del st.session_state.feedback  # remove after sh
