@@ -1,5 +1,6 @@
 import streamlit as st
-from dbs_management import add_book, edit_book, search_books, delete_book, get_borrowed_books
+from dbs_management import add_book, edit_book, search_books_by_title, search_books_by_bookshelf, search_books_by_author, delete_book, get_borrowed_books
+from user_app import search_books_menu,display_search_results
 
 def dashboard():
     st.title("📚 Library Book Catalog System")
@@ -30,27 +31,7 @@ def dashboard():
 
     # Search Books
     elif menu == "Search Books":
-        st.subheader("Search for Books")
-        search_query = st.text_input("Enter Title, Author, or Bookshelf")
-
-        if st.button("Search"):
-        # Ensure search_query is not empty
-            if search_query:
-                results = search_books(search_query)  # Function to search based on query
-
-                if results:
-                    for book in results:
-                    # Check if the book tuple has 5 elements
-                        if len(book) >= 5:
-                        # Display the book details
-                            st.write(f"📖 **{book[1]}** - {book[2]} ({book[3]}, {book[4]})")
-                        else:
-                        # Handle incomplete book data
-                            st.write(f"📖 **{book[1]}** - {book[2]} (Incomplete data)")
-                else:
-                    st.warning("No books found.")
-            else:
-                st.warning("Please enter a search term.")
+        search_books_menu()
 
 
     # Edit a Book
