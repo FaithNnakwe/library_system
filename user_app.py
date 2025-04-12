@@ -1,9 +1,12 @@
 import streamlit as st
 import mysql.connector
-from dbs_management import borrow_book, search_books, search_books_by_author, search_books_by_bookshelf, search_books_by_title
+from dbs_management import search_books_by_author, search_books_by_bookshelf, search_books_by_title
+from dbs_management import get_user_borrowed_books, return_borrowed_book
 from PIL import Image, ImageDraw, ImageFont
+from pages import borrow_book
 import random
 from textwrap import wrap
+import login
 
 # Font settings (adjust based on your OS)
 title_font = ImageFont.truetype("arial.ttf", 17)
@@ -39,13 +42,20 @@ def wrap_text(text, font, max_width):
 
 # Dashboard Function
 def dashboard():
+    if 'user' not in st.session_state or not st.session_state.get('logged_in', False):
+        st.warning("🚫 Please log in to access the dashboard.")
+        st.session_state.page = "login"  # optional: auto-redirect to login page
+        st.rerun()
+        return
+
     st.title("📚 User Dashboard")
-    st.write("Welcome, Book Lover!")
+    st.write(f"Welcome, {st.session_state.user['name']}!")
 
     # Log Out Button
     if st.button("Log out"):
         st.session_state.logged_in = False
         st.session_state.user = None
+        st.session_state.page = "login"
         st.rerun()
 
     # Sidebar Menu
@@ -55,24 +65,40 @@ def dashboard():
     if menu == "Search Books":
         search_books_menu()
 
-    if menu == "View Borrowed Books":
-        view_borrowed_books_menu()
+    def view_borrowed_books_menu():
+        email = st.session_state.user['email']
+        borrowed_books = get_user_borrowed_books(email)
 
-    # Connect to the MySQL database
-    conn = mysql.connector.connect(
-        host="localhost",
-        user="root",  # replace with your MySQL username
-        password="Faith0644",  # replace with your MySQL password
-        database="library_db"
-    )
-    cursor = conn.cursor()
+        st.subheader("📚 Your Borrowed Books")
+        if not borrowed_books:
+            st.info("You have no borrowed books.")
+            return
 
-    # Available Books Section
-    st.subheader("📖 Available Books")
-    show_available_books(cursor)
+        for book in borrowed_books:
+            with st.expander(f"{book['title']} by {book['author']}"):
+                st.write(f"**Borrowed On:** {book['borrow_date']}")
+                st.write(f"**Due Date:** {book['return_date']}")
+                if st.button(f"Return '{book['title']}'", key=book['id']):
+                    return_borrowed_book(book['id'], email)
+                    st.success(f"You returned '{book['title']}' successfully.")
+                    st.rerun()
 
-    # Close connection
-    conn.close()
+    # Display available books or borrow page
+    if 'selected_book_id' in st.session_state:
+        borrow_book.borrow_page()
+    else:
+        # Show the available books
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="Faith0644",
+            database="library_db"
+        )
+        cursor = conn.cursor()
+        st.subheader("📖 Available Books")
+        show_available_books()
+        conn.close()
+
 
 # Search Books Function
 def search_books_menu():
@@ -104,8 +130,8 @@ def display_search_results(results):
         cols = st.columns(5)  # Create columns layout for displaying books
         for idx, book in enumerate(results):
             if len(book) >= 5:
-                title, author, genre = book[1], book[2], book[4]
-                display_book_image(title, author, genre, idx, cols)
+                title, author, genre, book_id = book[1], book[2], book[4], book[0]
+                display_book_image(title, author, genre, book_id, idx, cols)
     else:
         st.warning("No books found.")
 
@@ -115,31 +141,35 @@ def view_borrowed_books_menu():
     # This section would fetch and display borrowed books from the database
     pass
 
-# Available Books Function
-def show_available_books(cursor):
-    st.subheader("Available Books")
-
-    # Initialize the number of books to show
-    if 'books_shown' not in st.session_state:
-        st.session_state.books_shown = 10  # Show 5 books initially
-
-    # Connect to the database
+@st.cache_data
+def get_random_books():
     conn = mysql.connector.connect(
         host="localhost",
-        user="root",  # your MySQL username
-        password="Faith0644",  # your MySQL password
+        user="root",
+        password="Faith0644",
         database="library_db"
     )
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM books WHERE bookshelf IS NOT NULL ORDER BY RAND()")
     books = cursor.fetchall()
     conn.close()
+    return books
+
+
+# Available Books Function
+def show_available_books():
+    st.subheader("Available Books")
+
+    # Initialize the number of books to show
+    if 'books_shown' not in st.session_state:
+        st.session_state.books_shown = 10  # Show 5 books initially
+    books = get_random_books()
 
     # Display books based on the current count
     cols = st.columns(5)
     for idx, book in enumerate(books[:st.session_state.books_shown]):
         title, author, genre, book_id = book[1], book[2], book[4], book[0]
-        display_book_image(title, author, genre, idx,cols)
+        display_book_image(title, author, genre, book_id, idx,cols)
 
     # Add a "Load More" button if there are more books
     if st.session_state.books_shown < len(books):
@@ -148,7 +178,7 @@ def show_available_books(cursor):
 
 
 # Book Display Function
-def display_book_image(title, author, genre, idx, cols):
+def display_book_image(title, author, genre, book_id, idx, cols):
     bg_color = random_pastel_color()
     img = Image.new("RGB", (250, 250), color=bg_color)
     draw = ImageDraw.Draw(img)
@@ -172,3 +202,23 @@ def display_book_image(title, author, genre, idx, cols):
     col_idx = idx % 5  # Ensure images are placed correctly in a row
     with cols[col_idx]:
         st.image(img, caption=f"Genre: {genre}")
+        if st.button(f"Borrow", key=f"borrow_{book_id}"):
+            # Store the selected book ID in session state
+            st.session_state.selected_book_id = book_id
+            # Navigate to the borrow page
+            st.session_state.page = "borrow"
+            st.rerun()
+
+def main():
+    # Ensure that a page is set in session state
+    if 'page' not in st.session_state:
+        st.session_state.page = 'login'  # Default to login page
+
+    if st.session_state.page == 'dashboard':
+        dashboard()
+    elif st.session_state.page == 'borrow':
+        borrow_book.borrow_page()
+    elif st.session_state.page == 'login':
+        login.login() 
+
+main()

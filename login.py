@@ -20,7 +20,7 @@ def hash_password(password):
 def sign_up():
     st.title("Sign Up")
     name = st.text_input("Name")
-    email = st.text_input("Email")
+    email = st.text_input("Email", key="signup_email")
     password = st.text_input("Password", type="password")
     role = st.selectbox("Role", ["user", "admin"])
 
@@ -44,7 +44,7 @@ def sign_up():
 # Login
 def login():
     st.title("Login")
-    email = st.text_input("Email")
+    email = st.text_input("Email", key="login_email")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
