@@ -100,7 +100,7 @@ def admin_user_search():
     # User lookup logic
     user = None
     if search_option == "Email":
-        email = st.text_input("Enter User Email")
+        email = st.text_input("Enter User Email", key='borrow_email')
         if email:
             cursor.execute("SELECT id, name FROM users WHERE email = %s", (email,))
             user = cursor.fetchone()

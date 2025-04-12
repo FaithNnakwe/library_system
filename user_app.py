@@ -234,6 +234,6 @@ def main():
     elif st.session_state.page == 'borrow':
         borrow_book.borrow_page()
     elif st.session_state.page == 'login':
-        login.login('main') 
+        login.login('main2') 
 
 main()
