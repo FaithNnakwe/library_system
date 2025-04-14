@@ -128,8 +128,8 @@ def display_search_results(results):
 
 # View Borrowed Books Function
 def view_borrowed_books_menu():
-    email = st.session_state.user['email']
-    borrowed_books = get_user_borrowed_books(email)
+    borrow_email = st.session_state.user['email']
+    borrowed_books = get_user_borrowed_books(borrow_email)
 
     st.subheader("📚 Your Borrowed Books")
     st.markdown("#### Users are allowed 4 books at a time.")
@@ -147,11 +147,11 @@ def view_borrowed_books_menu():
             st.write(f"**Borrowed On:** {book['borrow_date']}")
             st.write(f"**Due Date:** {book['due_date']}")
             if st.button(f"Return '{book['title']}'", key=book['id']):
-                return_borrowed_book(book['id'], email)
+                return_borrowed_book(book['id'], borrow_email)
                 st.session_state.feedback = f"You returned '{book['title']}' successfully."
                 st.rerun()
             if st.button(f"Extend Due Date for '{book['title']}'", key=f"extend_{book['id']}"):
-                extend_due_date(book['id'], email)
+                extend_due_date(book['id'], borrow_email)
                 st.session_state.feedback = f"Due date for '{book['title']}' has been extended by 14 days."
                 st.rerun()
 
@@ -216,13 +216,13 @@ def display_book_image(title, author, genre, book_id, idx, cols):
     # Use the correct column to display the image (side by side)
     col_idx = idx % 5  # Ensure images are placed correctly in a row
     with cols[col_idx]:
-        st.image(img, caption=f"Genre: {genre}")
-        if st.button(f"Borrow", key=f"borrow_{book_id}"):
-            # Store the selected book ID in session state
-            st.session_state.selected_book_id = book_id
-            # Navigate to the borrow page
-            st.session_state.page = "borrow"
-            st.rerun()
+        st.image(img, caption=f"Genre: {genre} Book ID: {book_id}")
+         # Show Borrow button only if the user is NOT an admin
+        if st.session_state.get("user") and st.session_state.user.get("role") != "admin":
+            if st.button(f"Borrow", key=f"borrow_{book_id}"):
+                st.session_state.selected_book_id = book_id
+                st.session_state.page = "borrow"
+                st.rerun()
 
 def main():
     # Ensure that a page is set in session state
@@ -234,6 +234,6 @@ def main():
     elif st.session_state.page == 'borrow':
         borrow_book.borrow_page()
     elif st.session_state.page == 'login':
-        login.login('main2') 
+        login.login() 
 
 main()

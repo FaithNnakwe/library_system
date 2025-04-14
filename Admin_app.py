@@ -1,5 +1,5 @@
 import streamlit as st
-from dbs_management import add_book, edit_book, search_books_by_title, search_books_by_bookshelf, search_books_by_author, delete_book, get_borrowed_books
+from dbs_management import add_book, edit_book, search_books_by_title, search_books_by_bookshelf, search_books_by_author, delete_book, get_borrowed_books, get_book_by_id
 from user_app import search_books_menu,display_search_results
 import pandas as pd
 import mysql.connector
@@ -35,18 +35,39 @@ def dashboard():
     elif menu == "Search Books":
         search_books_menu()
 
-
     # Edit a Book
     elif menu == "Edit Book":
         st.subheader("Edit Book Details")
         book_id = st.number_input("Enter Book ID", min_value=1, step=1)
-        new_title = st.text_input("New Title")
-        new_author = st.text_input("New Author")
-        new_genre = st.text_input("New Genre")
 
-        if st.button("Update Book"):
-            edit_book(new_title, new_author, new_genre, book_id)
-            st.success("Book updated successfully!")
+        if st.button("Fetch Book"):
+            book = get_book_by_id(book_id)
+            if book:
+                current_title, current_author, current_genre = book
+                st.session_state['edit_book_loaded'] = True
+                st.session_state['book_details'] = {
+                'title': current_title,
+                'author': current_author,
+                'genre': current_genre
+            }
+            else:
+                st.warning("Book not found.")
+
+        if st.session_state.get('edit_book_loaded', False):
+            st.text("Leave blank to keep current value")
+            new_title = st.text_input("New Title", value=st.session_state['book_details']['title'])
+            new_author = st.text_input("New Author", value=st.session_state['book_details']['author'])
+            new_genre = st.text_input("New Genre", value=st.session_state['book_details']['genre'])
+
+            if st.button("Update Book"):
+            # Keep original values if fields are left empty
+                final_title = new_title if new_title.strip() else st.session_state['book_details']['title']
+                final_author = new_author if new_author.strip() else st.session_state['book_details']['author']
+                final_genre = new_genre if new_genre.strip() else st.session_state['book_details']['genre']
+
+                edit_book(book_id, final_title, final_author, final_genre)
+                st.success("Book updated successfully!")
+                st.session_state['edit_book_loaded'] = False
 
     # Delete a Book
     elif menu == "Delete Book":
@@ -75,7 +96,6 @@ def dashboard():
     elif menu == "User Borrow History":
         admin_user_search()
 
-
 def admin_user_search():
     st.title("🔍 Search User Borrow History")
 
@@ -100,9 +120,9 @@ def admin_user_search():
     # User lookup logic
     user = None
     if search_option == "Email":
-        email = st.text_input("Enter User Email", key='borrow_email')
-        if email:
-            cursor.execute("SELECT id, name FROM users WHERE email = %s", (email,))
+        search_email = st.text_input("Enter User Email", key='borrow_email')
+        if search_email:
+            cursor.execute("SELECT id, name FROM users WHERE email = %s", (search_email,))
             user = cursor.fetchone()
 
     elif search_option == "User ID":
@@ -149,5 +169,8 @@ def admin_user_search():
                 st.markdown("---")
         else:
             st.info("This user has no borrowing history.")
+
+
     
     conn.close()
+

@@ -5,6 +5,7 @@ CREATE TABLE users (
     name VARCHAR(100),
     email VARCHAR(100) UNIQUE,
     password VARCHAR(255)
+    role VARCHAR(100),
 );
 
 CREATE TABLE borrow_records (

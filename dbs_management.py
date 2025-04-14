@@ -83,10 +83,15 @@ def delete_book(book_id):
     conn.commit()
 
 # Edit a Book
-def edit_book(book_id, title, author, bookshelf,):
-    query = "UPDATE books SET title = %s, author = %s, bookshelf = %s  WHERE id = %s"
+def edit_book(book_id, title, author, bookshelf):
+    query = "UPDATE books SET title = %s, author = %s, bookshelf = %s WHERE id = %s"
     cursor.execute(query, (title, author, bookshelf, book_id))
     conn.commit()
+
+def get_book_by_id(book_id):
+    query = "SELECT title, author, bookshelf FROM books WHERE id = %s"
+    cursor.execute(query, (book_id,))
+    return cursor.fetchone()
 
 def get_borrowed_books():
     conn = mysql.connector.connect(
@@ -162,7 +167,6 @@ def extend_due_date(book_id, email):
     cursor.execute(update_query, (book_id, email))
     conn.commit()
     conn.close()
-
 def close_connection():
     cursor.close()
     conn.close()

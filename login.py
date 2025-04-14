@@ -20,12 +20,12 @@ def hash_password(password):
 def sign_up():
     st.title("Sign Up")
     name = st.text_input("Name")
-    email = st.text_input("Email", key="signup_email")
+    sign_up_email = st.text_input("Email", key="signup_email")
     password = st.text_input("Password", type="password")
     role = st.selectbox("Role", ["user", "admin"])
 
     if st.button("Register"):
-        if not name or not email or not password or not role:
+        if not name or not sign_up_email or not password or not role:
             st.error("Please fill in all fields.")
         else:
             hashed_pw = hash_password(password)
@@ -34,7 +34,7 @@ def sign_up():
                 conn = get_connection()
                 cursor = conn.cursor()
                 cursor.execute("INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)", 
-                           (name, email, hashed_pw, role))
+                           (name, sign_up_email, hashed_pw, role))
                 conn.commit()
                 conn.close()
                 st.success("Registration successful. Please login.")
@@ -44,17 +44,17 @@ def sign_up():
 # Login
 def login(role="main"):
     st.title("Login")
-    email = st.text_input("Email", key=f"login_email_{role}")
+    login_email = st.text_input("Email", key=f"login_email_{role}")
     password = st.text_input("Password", type="password", key=f"login_password_{role}")
 
     if st.button("Login", key=f"login_button_{role}"):
-        if not email or not password:
+        if not login_email or not password:
             st.error("Please fill in all fields.")
         else: 
             hashed_pw = hash_password(password)
             conn = get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM users WHERE email = %s AND password = %s", (email, hashed_pw))
+            cursor.execute("SELECT * FROM users WHERE email = %s AND password = %s", (login_email, hashed_pw))
             user_data = cursor.fetchone()
             conn.close()
 
@@ -85,6 +85,6 @@ if st.session_state.logged_in:
 else:
     page = st.sidebar.radio("Go to", ["Login", "Sign Up"])
     if page == "Login":
-        login('main')
+        login()
     else:
         sign_up()
