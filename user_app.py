@@ -7,6 +7,7 @@ import borrow_book
 import random
 from textwrap import wrap
 import login
+import recommendations
 
 # Font settings (adjust based on your OS)
 title_font = ImageFont.truetype("arial.ttf", 17)
@@ -61,7 +62,7 @@ def dashboard():
         st.rerun()
 
     # Sidebar Menu (updates session state)
-    selected = st.sidebar.selectbox("Menu", ["Search Books", "View Borrowed Books"], index=["Search Books", "View Borrowed Books"].index(st.session_state.current_menu))
+    selected = st.sidebar.selectbox("Menu", ["Search Books", "View Borrowed Books", "Recommendations"], index=["Search Books", "View Borrowed Books","Recommendations" ].index(st.session_state.current_menu))
     st.session_state.current_menu = selected
 
     # --- MENU ACTIONS ---
@@ -85,6 +86,14 @@ def dashboard():
 
     elif st.session_state.current_menu == "View Borrowed Books":
         view_borrowed_books_menu()
+
+        if st.button("🔙 Return to Dashboard"):
+            st.session_state.current_menu = "Search Books"
+            st.rerun()
+    
+    elif st.session_state.current_menu == "Recommendations":
+        # Inside dashboard() or where you want to show recs
+        recommendations.show_recommendations()
 
         if st.button("🔙 Return to Dashboard"):
             st.session_state.current_menu = "Search Books"
