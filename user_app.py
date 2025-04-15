@@ -1,7 +1,7 @@
 import streamlit as st
 import mysql.connector
 from dbs_management import search_books_by_author, search_books_by_bookshelf, search_books_by_title
-from dbs_management import get_user_borrowed_books, return_borrowed_book, extend_due_date
+from dbs_management import get_user_borrowed_books, return_borrowed_book, extend_due_date, search_books_by_id
 from PIL import Image, ImageDraw, ImageFont
 import borrow_book
 import random
@@ -9,12 +9,11 @@ from textwrap import wrap
 from login import log_in
 import recommendations
 
+
 # Font settings (adjust based on your OS)
 title_font = ImageFont.truetype("arial.ttf", 17)
 author_font = ImageFont.truetype("arial.ttf", 13)
 
-
-st.session_state.clear()
 
 # Utility Functions
 def random_pastel_color():
@@ -49,7 +48,7 @@ def set_gradient_background():
     """
     <style>
     .stApp {
-        background: linear-gradient(to right, #1a1a2e, #16213e);  /* dark academic vibe */
+        background: linear-gradient(to right, #1a1a2e, #16213e);  
     }
 
     /* Times New Roman for all text */
@@ -88,103 +87,108 @@ def dashboard():
         st.rerun()
         return
 
+   
+    if st.session_state.page == "borrow" and st.session_state.get("selected_book_id"):
+        print("✅ Navigating to borrow_page with book ID:", st.session_state.selected_book_id)
+        borrow_book.borrow_page()
+        return
+    
+    
+    if st.session_state.page == "my_account":
+        borrow_book.user_account_page()
+        return
+
     if 'current_menu' not in st.session_state:
         st.session_state.current_menu = "Search Books"  # default view
 
-    set_gradient_background()  # or set_background_color(), etc.
+    set_gradient_background()
     st.title("📚 User Dashboard")
-    # Custom navigation buttons
-    col1, col2, col3 = st.columns(3)
 
+    # Navigation Buttons
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        if st.button("🔍 Search Books"):
+        if st.button("🔍 Search Books", key="Search1"):
             st.session_state.current_menu = "Search Books"
             st.rerun()
-
     with col2:
         if st.button("📖 View Borrowed"):
             st.session_state.current_menu = "View Borrowed Books"
             st.rerun()
-
     with col3:
         if st.button("✨ Recommendations"):
             st.session_state.current_menu = "Recommendations"
             st.rerun()
-            
+    with col4:
+        if st.button("👤 My Account"):
+            st.session_state.page = "my_account"
+            st.rerun()
+
+
     st.write(f"Welcome, {st.session_state.user['name']}!")
 
-    # Log Out Button
     if st.button("Log out"):
         st.session_state.logged_in = False
         st.session_state.user = None
         st.session_state.page = "login"
         st.rerun()
 
-    # --- MENU ACTIONS ---
+    
 
     if st.session_state.current_menu == "Search Books":
         search_books_menu()
-
-        if 'selected_book_id' in st.session_state:
-            borrow_book.borrow_page()
-        else:
-            st.subheader("📖 Available Books")
-            conn = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="Faith0644",
-                database="library_db"
-            )
-            cursor = conn.cursor()
-            show_available_books()
-            conn.close()
+        st.subheader("📖 Available Books")
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="Faith0644",
+            database="library_db"
+        )
+        cursor = conn.cursor()
+        show_available_books()
+        conn.close()
 
     elif st.session_state.current_menu == "View Borrowed Books":
         view_borrowed_books_menu()
-
         if st.button("🔙 Return to Dashboard"):
             st.session_state.current_menu = "Search Books"
             st.rerun()
-    
+
     elif st.session_state.current_menu == "Recommendations":
-        # Inside dashboard() or where you want to show recs
         recommendations.show_recommendations()
-
         if st.button("🔙 Return to Dashboard"):
             st.session_state.current_menu = "Search Books"
             st.rerun()
-    
+
     st.markdown("""
     <style>
-    /* Make the expander background black and text white */
     .streamlit-expander {
         background-color: black !important;
         color: white !important;
         border-radius: 10px;
         padding: 10px;
     }
-
-    /* Style the expander header */
     .streamlit-expanderHeader {
         background-color: #111 !important;
         color: white !important;
         font-weight: bold;
     }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+
 
 
 # Search Books Function
 def search_books_menu():
     st.subheader("Search for Books")
 
-    # Create three different search inputs
+    # Create four different search inputs
     title_search = st.text_input("Enter Title")
     author_search = st.text_input("Enter Author")
     bookshelf_search = st.text_input("Enter Bookshelf")
+    Bookid_search = st.text_input("Enter Book ID")
 
     # Create a button to trigger the search
-    if st.button("Search"):
+    if st.button("Search", key="Search2"):
         # Determine which search term is provided and call the appropriate search function
         if title_search:
             results = search_books_by_title(title_search)
@@ -195,8 +199,21 @@ def search_books_menu():
         elif bookshelf_search:
             results = search_books_by_bookshelf(bookshelf_search)
             display_search_results(results)
+        elif Bookid_search:
+            results = search_books_by_id(Bookid_search)
+            display_search_results(results)
         else:
             st.warning("Please enter at least one search term.")
+            return
+        
+        st.session_state.search_results = results  
+        st.session_state.search_triggered = True   
+        st.rerun()  # Trigger rerun to display results outside the button context
+
+      # Show previous search results after rerun
+    if st.session_state.get("search_triggered", False):
+        results = st.session_state.get("search_results", [])
+        display_search_results(results)
 
 
 def display_search_results(results):
@@ -209,7 +226,6 @@ def display_search_results(results):
     else:
         st.warning("No books found.")
 
-# View Borrowed Books Function
 def view_borrowed_books_menu():
     borrow_email = st.session_state.user['email']
     borrowed_books = get_user_borrowed_books(borrow_email)
@@ -218,7 +234,7 @@ def view_borrowed_books_menu():
     st.markdown("#### Users are allowed 4 books at a time.")
     if 'feedback' in st.session_state:
         st.success(st.session_state.feedback)
-        del st.session_state.feedback  # remove after sh
+        del st.session_state.feedback
 
     if not borrowed_books:
         st.info("You have no borrowed books.")
@@ -229,14 +245,26 @@ def view_borrowed_books_menu():
             st.write(f"**Link:** {book['link']}")
             st.write(f"**Borrowed On:** {book['borrow_date']}")
             st.write(f"**Due Date:** {book['due_date']}")
+            st.write(f"**Book ID:** {book['id']}")
+
+            # Return book button
             if st.button(f"Return '{book['title']}'", key=book['id']):
                 return_borrowed_book(book['id'], borrow_email)
                 st.session_state.feedback = f"You returned '{book['title']}' successfully."
                 st.rerun()
-            if st.button(f"Extend Due Date for '{book['title']}'", key=f"extend_{book['id']}"):
-                extend_due_date(book['id'], borrow_email)
-                st.session_state.feedback = f"Due date for '{book['title']}' has been extended by 14 days."
-                st.rerun()
+
+            # Extend due date logic
+            if book.get('extended'):
+                st.warning("📅 Due date already extended.")
+            else:
+                if st.button(f"Extend Due Date for '{book['title']}'", key=f"extend_{book['id']}"):
+                    success = extend_due_date(book['id'], borrow_email)
+                    if success:
+                        st.session_state.feedback = f"Due date for '{book['title']}' has been extended by 14 days."
+                    else:
+                        st.session_state.feedback = f"Due date extension for '{book['title']}' failed. Extension already used."
+                    st.rerun()
+
 
 
 @st.cache_data
@@ -272,7 +300,7 @@ def show_available_books():
     # Add a "Load More" button if there are more books
     if st.session_state.books_shown < len(books):
         if st.button("Load More"):
-            st.session_state.books_shown += 5  # Load 5 more books
+            st.session_state.books_shown += 5  
 
 
 # Book Display Function
@@ -305,6 +333,7 @@ def display_book_image(title, author, genre, book_id, idx, cols):
             if st.button(f"Borrow", key=f"borrow_{book_id}"):
                 st.session_state.selected_book_id = book_id
                 st.session_state.page = "borrow"
+                print(f"Page state changed to: {st.session_state.page}")  # Debugging output
                 st.rerun()
 
 def main():

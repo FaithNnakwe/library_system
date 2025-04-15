@@ -42,7 +42,7 @@ def set_gradient_background():
 
 
 def dashboard():
-    set_gradient_background()  # or set_background_color(), etc
+    set_gradient_background() 
     st.title("📚 Library Book Catalog System")
 
     col1, col2, col3, col4, col5, col6 = st.columns(6)

@@ -54,7 +54,7 @@ def set_gradient_background():
 
 # Sign up
 def sign_up():
-    set_gradient_background()  # or set_background_color(), etc
+    set_gradient_background()  
     st.title("Sign Up")
     
     name = st.text_input("Name")
@@ -65,7 +65,7 @@ def sign_up():
     admin_code_input = st.text_input("Admin Code (leave blank if you're signing up as a user)", type="password")
     
     # Set role based on admin code
-    ADMIN_SECRET_CODE = "my_super_secret_code_123"  # Change this to your own secret
+    ADMIN_SECRET_CODE = "my_super_secret_code_123"
     role = "admin" if admin_code_input == ADMIN_SECRET_CODE else "user"
 
     if st.button("Register"):
@@ -88,7 +88,7 @@ def sign_up():
 
 # Login
 def log_in():
-    set_gradient_background()  # or set_background_color(), etc
+    set_gradient_background()  
     st.title("Login")
     email = st.text_input("Email", key=f"login_email2")
     password = st.text_input("Password", type="password", key=f"login_password2")
