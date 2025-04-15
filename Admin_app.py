@@ -201,7 +201,11 @@ def admin_user_search():
             user = cursor.fetchone()
 
     elif search_option == "User ID":
-        user_id = st.text_input("Enter User ID", type="number")
+        user_id = st.text_input("Enter User ID")
+        if user_id.isdigit():
+            user_id = int(user_id)
+        else:
+            st.warning("Please enter a valid numeric User ID.")
         if user_id:
             cursor.execute("SELECT id, name FROM users WHERE id = %s", (user_id,))
             user = cursor.fetchone()
