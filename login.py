@@ -3,6 +3,7 @@ import mysql.connector
 import hashlib
 import Admin_app
 import user_app
+from streamlit.errors import StreamlitAPIException
 
 # MySQL connection
 def get_connection():
@@ -16,8 +17,44 @@ def get_connection():
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+def set_gradient_background():
+    st.markdown(
+    """
+    <style>
+    .stApp {
+        background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+    }
+
+     /* Apply Times New Roman to everything */
+    html, body, [class*="css"] {
+        font-family: 'Times New Roman', Times, serif;
+    }
+
+    .stButton>button {
+        border: none
+        background-color: #6b4226;  /* warm brown like leather-bound books */
+        color: #fffbe6; 
+        font-family: 'Times New Roman', Times, serif;
+        padding: 0.6em 1.2em;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background-color 0.3s ease, transform 0.2s;
+
+    }
+
+    .stButton>button:hover {
+        background-color: #8b5e3c;  /* slightly lighter brown */
+        transform: scale(1.03);
+        cursor: pointer;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Sign up
 def sign_up():
+    set_gradient_background()  # or set_background_color(), etc
     st.title("Sign Up")
     
     name = st.text_input("Name")
@@ -50,12 +87,13 @@ def sign_up():
 
 
 # Login
-def login(role="main"):
+def log_in():
+    set_gradient_background()  # or set_background_color(), etc
     st.title("Login")
-    email = st.text_input("Email", key=f"login_email_{role}")
-    password = st.text_input("Password", type="password", key=f"login_password_{role}")
+    email = st.text_input("Email", key=f"login_email2")
+    password = st.text_input("Password", type="password", key=f"login_password2")
 
-    if st.button("Login", key=f"login_button_{role}"):
+    if st.button("Login", key=f"login_button1"):
         if not email or not password:
             st.error("Please fill in all fields.")
         else: 
@@ -91,8 +129,12 @@ st.sidebar.title("Navigation")
 if st.session_state.logged_in:
     main_app()
 else:
-    page = st.sidebar.radio("Go to", ["Login", "Sign Up"])
-    if page == "Login":
-        login()
-    else:
-        sign_up()
+    try:
+        page = st.sidebar.radio("Go to", ["Login", "Sign Up"], key="login_signup_radio_unique")
+        
+        if page == "Login":
+            log_in()
+        else:
+            sign_up()
+    except  StreamlitAPIException as e:
+        pass

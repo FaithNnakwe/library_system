@@ -6,12 +6,15 @@ from PIL import Image, ImageDraw, ImageFont
 import borrow_book
 import random
 from textwrap import wrap
-import login
+from login import log_in
 import recommendations
 
 # Font settings (adjust based on your OS)
 title_font = ImageFont.truetype("arial.ttf", 17)
 author_font = ImageFont.truetype("arial.ttf", 13)
+
+
+st.session_state.clear()
 
 # Utility Functions
 def random_pastel_color():
@@ -41,6 +44,43 @@ def wrap_text(text, font, max_width):
     lines.append(line)
     return lines
 
+def set_gradient_background():
+    st.markdown(
+    """
+    <style>
+    .stApp {
+        background: linear-gradient(to right, #1a1a2e, #16213e);  /* dark academic vibe */
+    }
+
+    /* Times New Roman for all text */
+    html, body, [class*="css"] {
+        font-family: 'Times New Roman', Times, serif;
+    }
+
+    /* Library-themed button style */
+    .stButton>button {
+        border: none;
+        background-color: #6b4226;  /* warm brown like leather-bound books */
+        color: #fffbe6;             /* soft parchment-like white */
+        font-family: 'Times New Roman', Times, serif;
+        padding: 0.6em 1.2em;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background-color 0.3s ease, transform 0.2s;
+    }
+
+    .stButton>button:hover {
+        background-color: #8b5e3c;  /* slightly lighter brown */
+        transform: scale(1.03);
+        cursor: pointer;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+
 def dashboard():
     if 'user' not in st.session_state or not st.session_state.get('logged_in', False):
         st.warning("🚫 Please log in to access the dashboard.")
@@ -51,7 +91,26 @@ def dashboard():
     if 'current_menu' not in st.session_state:
         st.session_state.current_menu = "Search Books"  # default view
 
+    set_gradient_background()  # or set_background_color(), etc.
     st.title("📚 User Dashboard")
+    # Custom navigation buttons
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("🔍 Search Books"):
+            st.session_state.current_menu = "Search Books"
+            st.rerun()
+
+    with col2:
+        if st.button("📖 View Borrowed"):
+            st.session_state.current_menu = "View Borrowed Books"
+            st.rerun()
+
+    with col3:
+        if st.button("✨ Recommendations"):
+            st.session_state.current_menu = "Recommendations"
+            st.rerun()
+            
     st.write(f"Welcome, {st.session_state.user['name']}!")
 
     # Log Out Button
@@ -60,10 +119,6 @@ def dashboard():
         st.session_state.user = None
         st.session_state.page = "login"
         st.rerun()
-
-    # Sidebar Menu (updates session state)
-    selected = st.sidebar.selectbox("Menu", ["Search Books", "View Borrowed Books", "Recommendations"], index=["Search Books", "View Borrowed Books","Recommendations" ].index(st.session_state.current_menu))
-    st.session_state.current_menu = selected
 
     # --- MENU ACTIONS ---
 
@@ -98,6 +153,25 @@ def dashboard():
         if st.button("🔙 Return to Dashboard"):
             st.session_state.current_menu = "Search Books"
             st.rerun()
+    
+    st.markdown("""
+    <style>
+    /* Make the expander background black and text white */
+    .streamlit-expander {
+        background-color: black !important;
+        color: white !important;
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+    /* Style the expander header */
+    .streamlit-expanderHeader {
+        background-color: #111 !important;
+        color: white !important;
+        font-weight: bold;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 
 # Search Books Function
@@ -243,6 +317,6 @@ def main():
     elif st.session_state.page == 'borrow':
         borrow_book.borrow_page()
     elif st.session_state.page == 'login':
-        login.login() 
+        log_in
 
 main()

@@ -4,8 +4,81 @@ from user_app import search_books_menu,display_search_results
 import pandas as pd
 import mysql.connector
 
+def set_gradient_background():
+    st.markdown(
+    """
+    <style>
+    .stApp {
+        background: linear-gradient(to right, #1a1a2e, #16213e);  /* dark academic vibe */
+    }
+
+    /* Times New Roman for all text */
+    html, body, [class*="css"] {
+        font-family: 'Times New Roman', Times, serif;
+    }
+
+    /* Library-themed button style */
+    .stButton>button {
+        border: none;
+        background-color: #6b4226;  /* warm brown like leather-bound books */
+        color: #fffbe6;             /* soft parchment-like white */
+        font-family: 'Times New Roman', Times, serif;
+        padding: 0.6em 1.2em;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: background-color 0.3s ease, transform 0.2s;
+    }
+
+    .stButton>button:hover {
+        background-color: #8b5e3c;  /* slightly lighter brown */
+        transform: scale(1.03);
+        cursor: pointer;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+
 def dashboard():
+    set_gradient_background()  # or set_background_color(), etc
     st.title("📚 Library Book Catalog System")
+
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+    with col1:
+        if st.button("Add Book", key="Add_button1"):
+            st.session_state.current_menu = "Add Book"
+            st.rerun()
+
+    with col2:
+        if st.button("Search Books"):
+            st.session_state.current_menu = "Search Books"
+            st.rerun()
+
+    with col3:
+        if st.button("Edit Book"):
+            st.session_state.current_menu = "Edit Book"
+            st.rerun()
+        
+    with col4:
+        if st.button("Delete Book"):
+            st.session_state.current_menu = "Delete Book"
+            st.rerun()
+
+    with col5:
+        if st.button("Borrowed Books"):
+            st.session_state.current_menu = "Borrowed Books"
+            st.rerun()
+
+    with col6:
+        if st.button("User Borrow History"):
+            st.session_state.current_menu = "User Borrow History"
+            st.rerun()
+
+
+
     st.write("Welcome, Admin!")
 
     # Log out button
@@ -14,17 +87,18 @@ def dashboard():
         st.session_state.user = None
         st.rerun()
 
-    # Sidebar Navigation
-    menu = st.sidebar.selectbox("Menu", ["Add Book", "Search Books", "Edit Book", "Delete Book", "Borrowed Books","User Borrow History"])
+    
+    if "current_menu" not in st.session_state:
+        st.session_state.current_menu = "Add Book" 
 
     # Add a Book
-    if menu == "Add Book":
+    if st.session_state.current_menu == "Add Book":
         st.subheader("Add a New Book")
         title = st.text_input("Title")
         author = st.text_input("Author")
         bookshelf = st.text_input("Genre")
 
-        if st.button("Add Book"):
+        if st.button("Add Book",key="Add_button2"):
             if title and author and bookshelf:
                 add_book(title, author, bookshelf)
                 st.success("Book added successfully!")
@@ -32,11 +106,11 @@ def dashboard():
                 st.error("Please fill in all fields.")
 
     # Search Books
-    elif menu == "Search Books":
+    elif st.session_state.current_menu == "Search Books":
         search_books_menu()
 
     # Edit a Book
-    elif menu == "Edit Book":
+    elif st.session_state.current_menu == "Edit Book":
         st.subheader("Edit Book Details")
         book_id = st.number_input("Enter Book ID", min_value=1, step=1)
 
@@ -70,7 +144,7 @@ def dashboard():
                 st.session_state['edit_book_loaded'] = False
 
     # Delete a Book
-    elif menu == "Delete Book":
+    elif st.session_state.current_menu == "Delete Book":
         st.subheader("Delete a Book")
         book_id = st.number_input("Enter Book ID to Delete", min_value=1, step=1)
 
@@ -78,7 +152,7 @@ def dashboard():
             delete_book(book_id)
             st.success("Book deleted successfully!")
     
-    elif menu == "Borrowed Books":
+    elif st.session_state.current_menu == "Borrowed Books":
         st.subheader("Borrowed Book Records")
         borrowed = get_borrowed_books()
 
@@ -93,7 +167,8 @@ def dashboard():
             st.table(df)
         else:
             st.info("No books currently borrowed.")
-    elif menu == "User Borrow History":
+
+    elif st.session_state.current_menu == "User Borrow History":
         admin_user_search()
 
 def admin_user_search():
@@ -171,6 +246,4 @@ def admin_user_search():
             st.info("This user has no borrowing history.")
 
 
-    
-    conn.close()
 
