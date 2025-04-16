@@ -1,7 +1,7 @@
 import streamlit as st
 import mysql.connector
 from dbs_management import search_books_by_author, search_books_by_bookshelf, search_books_by_title
-from dbs_management import get_user_borrowed_books, return_borrowed_book, extend_due_date, search_books_by_id
+from dbs_management import get_user_borrowed_books, extend_due_date, search_books_by_id
 from PIL import Image, ImageDraw, ImageFont
 import borrow_book
 import random
@@ -280,6 +280,53 @@ def get_random_books():
     books = cursor.fetchall()
     conn.close()
     return books
+
+def return_borrowed_book(book_id, email):
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Faith0644",
+        database="library_db"
+    )
+    cursor = conn.cursor()
+
+    # 1. Mark borrow record as returned
+    update_query = """
+        UPDATE borrow_records bb
+        JOIN users u ON bb.user_id = u.id
+        SET bb.return_status = TRUE
+        WHERE bb.book_id = %s AND u.email = %s AND bb.return_status = FALSE
+    """
+    cursor.execute(update_query, (book_id, email))
+
+    # 2. Check active borrow count
+    cursor.execute("""
+        SELECT COUNT(*) FROM borrow_records
+        WHERE book_id = %s AND return_status = FALSE
+    """, (book_id,))
+    active_borrow_count = cursor.fetchone()[0]
+
+    # 3. If less than 2, update availability
+    if active_borrow_count < 2:
+        cursor.execute("UPDATE books SET available = TRUE WHERE id = %s", (book_id,))
+
+        # 4. Mark first person in hold queue as notified
+        cursor.execute("""
+            SELECT id FROM holds
+            WHERE book_id = %s AND notified = FALSE
+            ORDER BY hold_date ASC
+            LIMIT 1
+        """, (book_id,))
+        first_hold = cursor.fetchone()
+        if first_hold:
+            hold_id = first_hold[0]
+            cursor.execute("UPDATE holds SET notified = TRUE WHERE id = %s", (hold_id,))
+            st.success("✅ First user in the hold queue marked as notified.")
+
+    conn.commit()
+    conn.close()
+
+
 
 
 # Available Books Function

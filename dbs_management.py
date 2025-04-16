@@ -145,24 +145,6 @@ def get_user_borrowed_books(email):
     conn.close()
     return results
 
-def return_borrowed_book(book_id, email):
-    conn = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Faith0644",
-        database="library_db"
-    )
-    cursor = conn.cursor()
-    update_query = """
-        UPDATE borrow_records bb
-        JOIN users u ON bb.user_id = u.id
-        SET bb.return_status = TRUE
-        WHERE bb.book_id = %s AND u.email = %s
-    """
-    cursor.execute(update_query, (book_id, email))
-    conn.commit()
-    conn.close()
-
 
 import mysql.connector
 

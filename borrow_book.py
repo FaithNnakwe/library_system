@@ -151,6 +151,11 @@ def borrow_page():
                     INSERT INTO borrow_records (user_id, book_id, borrow_date, due_date, return_status) 
                     VALUES (%s, %s, %s, %s, FALSE)
                 """, (user_id, book_id, datetime.now(), due_date))
+
+                cursor.execute("SELECT COUNT(*) FROM borrow_records WHERE book_id = %s AND return_status = FALSE", (book_id,))
+                new_borrow_count = cursor.fetchone()[0]
+                if new_borrow_count >= 2:
+                    cursor.execute("UPDATE books SET available = FALSE WHERE id = %s", (book_id,))
                 conn.commit()
                 conn.close()
 
@@ -158,7 +163,7 @@ def borrow_page():
                 st.markdown(f'<a href="{link}" target="_blank">📘 Click here to open the book</a>', unsafe_allow_html=True)
 
     else:
-        st.warning("This book has already been borrowed by 2 users.")
+        st.warning("This book is not availably right now.")
 
         conn = mysql.connector.connect(
             host="localhost",
@@ -174,6 +179,11 @@ def borrow_page():
         if not already_held:
             if st.button("📌 Place Hold"):
                 cursor.execute("INSERT INTO holds (user_id, book_id, hold_date) VALUES (%s, %s, %s)", (user_id, book_id, datetime.now()))
+                 # Update availability since borrow count already >= 2
+                cursor.execute("""
+                UPDATE books SET available = FALSE WHERE id = %s
+            """, (book_id,))
+                
                 conn.commit()
                 st.success("Hold placed successfully!")
         else:
@@ -232,7 +242,7 @@ def user_account_page():
     # --- Holds List ---
     st.subheader("📌 Books on Hold")
     cursor.execute("""
-        SELECT h.book_id, b.title, b.author, h.hold_date
+        SELECT h.book_id, b.title, b.author, h.hold_date, h.notified
         FROM holds h
         JOIN books b ON h.book_id = b.id
         WHERE h.user_id = %s
@@ -241,7 +251,7 @@ def user_account_page():
     holds = cursor.fetchall()
 
     if holds:
-        for book_id, title, author, hold_date in holds:
+        for book_id, title, author, hold_date, notified in holds:
             # Fetch position in queue
             cursor.execute("""
                 SELECT user_id FROM holds
@@ -250,10 +260,13 @@ def user_account_page():
             """, (book_id,))
             queue = cursor.fetchall()
             position = [u[0] for u in queue].index(user_id) + 1
+
+            position_display = "📬 Book Available" if notified else f"#{position}"
+
             st.markdown(f"**Title**: {title} ")
             st.write(f"**Author**: {author}")
             st.write(f"**Placed on**: {hold_date.strftime('%B %d, %Y')}")
-            st.write(f"**Your position in queue**: **#{position}** ---")
+            st.write(f"**Your position in queue**: **#{position_display}** ---")
     else:
         st.info("You haven't placed any holds yet.")
 
