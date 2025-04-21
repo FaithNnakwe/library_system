@@ -16,7 +16,7 @@ df['Title'] = df['Title'].apply(lambda x: None if pd.isna(x) else x)
 print(df.head())
 
 
-# Load your DataFrame (you may already have it in the previous step)
+# Load your DataFrame
 # df = pd.read_csv("gutenberg_data.csv")
 
 # MySQL connection details
